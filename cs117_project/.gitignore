@@ -1,0 +1,7 @@
+data/raw/
+data/phone/
+data/sheets/
+data/collect_log.txt
+features/
+__pycache__/
+data/review_view/
