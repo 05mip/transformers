@@ -1,8 +1,8 @@
 {
   "run": {
     "command": "python cs117_project/baselines.py",
-    "git_commit": "a989353",
-    "date_utc": "2026-11-17T01:22:15+00:00",
+    "git_commit": "35ece89",
+    "date_utc": "2026-11-17T01:33:36+00:00",
     "python": "3.12.1",
     "torch": "2.6.0+cu124",
     "transformers": "5.21.0.dev0",
@@ -36,20 +36,20 @@
           "a photo of a tandem bike.",
           "a photo of a hybrid bike."
         ],
-        "top1": 0.6929,
+        "top1": 0.6643,
         "top1_ci95": [
-          0.6143,
-          0.7643
+          0.5857,
+          0.7429
         ],
         "n_images": 140,
         "per_class_top1": {
           "road": 0.7,
           "mountain": 0.65,
-          "cruiser": 0.55,
-          "bmx": 0.95,
-          "tricycle": 0.75,
+          "cruiser": 0.65,
+          "bmx": 0.9,
+          "tricycle": 0.7,
           "tandem": 0.8,
-          "hybrid": 0.45
+          "hybrid": 0.25
         },
         "per_class_n": {
           "road": 20,
@@ -91,30 +91,30 @@
             ],
             [
               0,
-              0,
-              11,
               1,
+              13,
+              2,
               0,
-              5,
+              1,
               3
             ],
             [
               0,
               0,
               0,
-              19,
-              1,
+              18,
               0,
-              0
+              1,
+              1
             ],
             [
               0,
+              1,
               2,
-              1,
               0,
-              15,
-              1,
-              1
+              14,
+              0,
+              3
             ],
             [
               0,
@@ -126,13 +126,13 @@
               4
             ],
             [
-              5,
+              7,
+              4,
+              1,
+              0,
+              0,
               3,
-              0,
-              0,
-              0,
-              3,
-              9
+              5
             ]
           ]
         }
@@ -147,20 +147,20 @@
           "a photo of a tandem bike.",
           "a photo of a hybrid bike."
         ],
-        "top1": 0.9429,
+        "top1": 0.9357,
         "top1_ci95": [
-          0.9,
-          0.9786
+          0.8929,
+          0.9716
         ],
         "n_images": 140,
         "per_class_top1": {
           "road": 0.95,
           "mountain": 0.9,
-          "cruiser": 0.9,
+          "cruiser": 0.95,
           "bmx": 1.0,
           "tricycle": 1.0,
           "tandem": 1.0,
-          "hybrid": 0.85
+          "hybrid": 0.75
         },
         "per_class_n": {
           "road": 20,
@@ -203,9 +203,9 @@
             [
               0,
               0,
-              18,
+              19,
               1,
-              1,
+              0,
               0,
               0
             ],
@@ -237,13 +237,13 @@
               0
             ],
             [
-              1,
+              2,
+              2,
               1,
               0,
               0,
               0,
-              1,
-              17
+              15
             ]
           ]
         }

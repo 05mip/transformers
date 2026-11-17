@@ -1,9 +1,9 @@
 """Top up classes with images from Bing image search (Google's crawler is broken in icrawler).
 
-Images go to data/raw/<class>/<class>_bing_<sha>.jpg; each gets a manifest_raw.csv row with the
+Images go to data/review_view/<class>/unreviewed/<class>_bing_<sha>.jpg; each gets a manifest_raw.csv row with the
 source image URL, the query, and the source domain (in the `author` column, used by the per-source
 cap in make_splits.py). Web-search images are copyrighted by their owners: we use them for evaluation
-only and never redistribute them (data/raw is git-ignored; only URLs are committed).
+only and never redistribute them (the source URL of every image is recorded in the manifest).
 
 Usage:
     python cs117_project/collect_web.py --classes bmx tandem tricycle --per-query 80
@@ -21,7 +21,8 @@ from icrawler import ImageDownloader
 from icrawler.builtin import BingImageCrawler
 from PIL import Image
 
-from collect_images import FIELDS, MANIFEST, RAW_DIR, THUMB_WIDTH
+from collect_images import FIELDS, MANIFEST, THUMB_WIDTH
+from common import new_image_dir
 
 QUERIES = {
     # Bing (no cookies) largely searches the FIRST word, so every query starts with the class noun.
@@ -83,7 +84,7 @@ def main():
                         continue
                     img.thumbnail((THUMB_WIDTH, THUMB_WIDTH * 2))
                     out = f"{label}/{label}_bing_{sha[:12]}.jpg"
-                    img.save(RAW_DIR / out, "JPEG", quality=90)
+                    img.save(new_image_dir(label) / out.split("/")[-1], "JPEG", quality=90)
                 except Exception:
                     continue
                 seen_sha.add(sha)

@@ -9,10 +9,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
+# THE DATASET: data/raw/<class>/ holds every image we use (hand-reviewed). Candidates not (yet) in the
+# dataset live in data/review_view/<class>/{reject,unreviewed}/; move good ones into data/raw/<class>/.
 RAW_DIR = DATA / "raw"
+REVIEW_DIR = DATA / "review_view"
 PHONE_DIR = DATA / "phone"          # our own phone photos: data/phone/<class>/*.jpg (test-only)
 SPLITS = DATA / "splits.csv"        # committed: file,label,split (split = test | pool | phone)
-REVIEW = DATA / "review.csv"        # committed: file,label,decision (keep|reject) from hand review
+MANIFEST = DATA / "manifest_raw.csv"  # committed: source URL / license / author for every downloaded image
+MANUAL_SOURCES = DATA / "manual_sources.csv"  # optional: filename,url for images added by hand
 FEATURES = ROOT / "features"        # git-ignored embedding cache
 RESULTS = ROOT / "results"          # committed outputs
 
@@ -35,8 +39,15 @@ TEXT_MODELS = ("clip", "siglip")  # DINOv2 has no text encoder -> no zero-shot
 
 
 def image_path(file):
-    """splits.csv paths are relative to data/raw (web) or data/ (phone/...)."""
+    """splits.csv paths: "<class>/<name>" -> data/raw/<class>/<name>; "phone/..." -> data/phone/..."""
     return DATA / file if file.startswith("phone/") else RAW_DIR / file
+
+
+def new_image_dir(label):
+    """Where downloaders put new images (to be reviewed)."""
+    d = REVIEW_DIR / label / "unreviewed"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 
 def read_splits(split=None):

@@ -1,6 +1,6 @@
 """Collect CC-licensed bike-type images from Wikimedia Commons (primary) and Openverse (top-up).
 
-Images go to cs117_project/data/raw/<class>/ (git-ignored). Every downloaded file gets a row in
+Images go to cs117_project/data/review_view/<class>/unreviewed/ for hand review. Every downloaded file gets a row in
 cs117_project/data/manifest_raw.csv with its source, page URL, license and author, so the dataset
 can be rebuilt from the manifest alone.
 
@@ -18,8 +18,9 @@ from pathlib import Path
 import requests
 from PIL import Image
 
+from common import new_image_dir
+
 ROOT = Path(__file__).resolve().parent
-RAW_DIR = ROOT / "data" / "raw"
 MANIFEST = ROOT / "data" / "manifest_raw.csv"
 UA = {"User-Agent": "cs117-course-project-bike-dataset/0.1 (educational, non-commercial)"}
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
@@ -134,8 +135,7 @@ def main():
     seen_sha = {r["sha1"] for r in rows}
 
     for label in args.classes:
-        out = RAW_DIR / label
-        out.mkdir(parents=True, exist_ok=True)
+        out = new_image_dir(label)
         have = sum(r["label"] == label for r in rows)
         sources = [("commons", commons_files(c, s)) for c, s in COMMONS[label]]
         sources += [("openverse", openverse_files(q)) for q in OPENVERSE[label]]

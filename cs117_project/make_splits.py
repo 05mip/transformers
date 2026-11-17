@@ -1,10 +1,10 @@
 """Build the fixed train-pool / test split from the cleaned web images (+ phone photos as test-only).
 
 Steps:
-  1. Keep only files marked `keep` in data/review.csv (hand review against data/labeling_criteria.md);
-     unreviewed files are never used. Then cap images per source (Commons/Openverse photographer, or
-     website domain for web-search images) at --max-per-source per class, so one photo session or
-     one shop cannot dominate a class (and leak between test and pool).
+  1. Use every image in data/raw/<class>/ (hand-reviewed against data/labeling_criteria.md).
+     Then cap images per source (Commons/Openverse photographer, website domain for web-search images,
+     manual_sources.csv domain for hand-added images) at --max-per-source per class, so one photo
+     session or one shop cannot dominate a class (and leak between test and pool).
   2. Perceptual-hash (64-bit dHash) every image; images within Hamming distance <= --dup-thresh are
      near-duplicates. Within a class, keep one image per near-duplicate group. Groups that span classes
      (same picture under two labels) are dropped entirely as ambiguous.
@@ -25,7 +25,7 @@ from collections import defaultdict
 import numpy as np
 from PIL import Image
 
-from common import CLASSES, DATA, PHONE_DIR, RAW_DIR, REVIEW, SPLITS
+from common import CLASSES, MANIFEST, MANUAL_SOURCES, PHONE_DIR, RAW_DIR, SPLITS, image_path
 
 
 def dhash(path, size=8):
@@ -42,21 +42,27 @@ def main():
     ap.add_argument("--max-per-source", type=int, default=8)
     args = ap.parse_args()
 
-    keep = {r["file"] for r in csv.DictReader(REVIEW.open(newline="", encoding="utf-8")) if r["decision"] == "keep"}
-    manifest = list(csv.DictReader((DATA / "manifest_raw.csv").open(newline="", encoding="utf-8")))
-    kept = sorted((r for r in manifest if r["file"] in keep and r["label"] in CLASSES and (RAW_DIR / r["file"]).exists()),
-                  key=lambda r: r["file"])
+    # source of each image: manifest author (photographer / domain), else manual_sources.csv domain
+    source = {r["file"].split("/")[-1]: r["author"].strip().lower() for r in
+              csv.DictReader(MANIFEST.open(newline="", encoding="utf-8"))}
+    if MANUAL_SOURCES.exists():
+        for r in csv.DictReader(MANUAL_SOURCES.open(newline="", encoding="utf-8")):
+            parts = r.get("url", "").split("/")
+            source.setdefault(r["filename"], parts[2].removeprefix("www.") if len(parts) > 2 else "")
+    kept = []
+    for c in CLASSES:
+        d = RAW_DIR / c
+        kept += [(f"{c}/{p.name}", c) for p in sorted(d.glob("*")) if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")]
     random.Random(args.seed).shuffle(kept)  # which images survive the per-source cap is seeded, not by name
     per_source, items = defaultdict(int), []
-    for r in kept:
-        key = (r["label"], r["author"].strip().lower() or r["file"])  # no author -> its own source
+    for f, c in kept:
+        key = (c, source.get(f.split("/")[-1]) or f)  # unknown source -> its own source
         if per_source[key] < args.max_per_source:
             per_source[key] += 1
-            items.append((r["file"], r["label"]))
-    print(f"{len(manifest)} downloaded, {len(keep)} kept in hand review, "
-          f"{len(items)} after per-source cap of {args.max_per_source}")
+            items.append((f, c))
+    print(f"{len(kept)} images in data/raw, {len(items)} after per-source cap of {args.max_per_source}")
 
-    hashes = [dhash(RAW_DIR / f) for f, _ in items]
+    hashes = [dhash(image_path(f)) for f, _ in items]
     parent = list(range(len(items)))  # union-find over near-duplicates
 
     def find(i):
