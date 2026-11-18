@@ -15,6 +15,7 @@ RAW_DIR = DATA / "raw"
 REVIEW_DIR = DATA / "review_view"
 PHONE_DIR = DATA / "phone"          # our own phone photos: data/phone/<class>/*.jpg (test-only)
 SPLITS = DATA / "splits.csv"        # committed: file,label,split (split = test | pool | phone)
+FOLDS = DATA / "folds.csv"          # committed: file,label,source,fold (group-aware K-fold CV, KFOLD_PLAN.md)
 MANIFEST = DATA / "manifest_raw.csv"  # committed: source URL / license / author for every downloaded image
 MANUAL_SOURCES = DATA / "manual_sources.csv"  # optional: filename,url for images added by hand
 FEATURES = ROOT / "features"        # git-ignored embedding cache
@@ -53,6 +54,13 @@ def new_image_dir(label):
 def read_splits(split=None):
     rows = list(csv.DictReader(SPLITS.open(newline="", encoding="utf-8")))
     return [r for r in rows if split is None or r["split"] == split]
+
+
+def read_folds():
+    rows = list(csv.DictReader(FOLDS.open(newline="", encoding="utf-8")))
+    for r in rows:
+        r["fold"] = int(r["fold"])
+    return rows
 
 
 def run_info():

@@ -4,23 +4,49 @@ Zero-shot = cosine similarity between the image embedding and the embedding of t
 "a photo of a {class name}." (common.PROMPT_TEMPLATE); predict the most similar class. The prompt was
 fixed before any scoring and is never tuned on test images.
 
+With --cv: zero-shot needs no training, so it is scored once on every image in data/folds.csv (each
+image tested once, bootstrap CI), and also per fold for the ranking comparison.
+
 Usage (after embed.py):
     python cs117_project/baselines.py
-Output: results/baseline_test.json
+    python cs117_project/baselines.py --cv
+Output: results/baseline_test.json (or results/baseline_cv.json with --cv)
 """
 import argparse
 
 import numpy as np
 
 from common import CLASSES, RESULTS, TEXT_MODELS, read_splits, run_info, write_json
-from evaluation import load_split, summarize, text_feats
+from evaluation import balanced_acc, load_all_folds, load_split, summarize, text_feats
+
+
+def run_cv(args):
+    out = {"run": run_info(), "classes": CLASSES, "metric": "top-1 accuracy (also balanced accuracy)",
+           "protocol": "zero-shot scored on every image in data/folds.csv (each once); per-fold numbers too",
+           "results": {"random": {"top1_analytic": round(1 / len(CLASSES), 4)}}}
+    for m in args.models:
+        X, y, fold = load_all_folds(m)
+        T, prompts = text_feats(m)
+        pred = (X @ T.T).argmax(1)
+        n_folds = int(fold.max()) + 1
+        r = {"prompts": prompts, **summarize(y, pred),
+             "per_fold_top1": [round(float((pred[fold == f] == y[fold == f]).mean()), 4) for f in range(n_folds)],
+             "per_fold_balanced_acc": [round(balanced_acc(y[fold == f], pred[fold == f]), 4) for f in range(n_folds)]}
+        out["results"][f"zeroshot_{m}"] = r
+        print(f"[all folds] zero-shot {m}: top-1 {r['top1']:.3f} (95% CI {r['top1_ci95']}), balanced "
+              f"{r['balanced_acc']:.3f} on {r['n_images']} images; per fold {r['per_fold_top1']}")
+    print(f"[all folds] random: {1 / len(CLASSES):.3f} analytic")
+    write_json(RESULTS / "baseline_cv.json", out)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", nargs="+", default=list(TEXT_MODELS), choices=list(TEXT_MODELS))
     ap.add_argument("--random-trials", type=int, default=1000)
+    ap.add_argument("--cv", action="store_true", help="score on every image in data/folds.csv")
     args = ap.parse_args()
+    if args.cv:
+        return run_cv(args)
 
     splits = [s for s in ("test", "phone") if read_splits(s)]
     out = {"run": run_info(), "classes": CLASSES, "metric": "top-1 accuracy", "splits": {}}

@@ -1,4 +1,4 @@
-"""Embed every image in data/splits.csv with a frozen model; cache L2-normalized features.
+"""Embed every image in data/splits.csv and data/folds.csv with a frozen model; cache L2-normalized features.
 
 Output: features/<model>.npz with arrays `files` (str) and `feats` (float32, N x D), plus for text
 models `text_feats` (C x D, one row per class in common.CLASSES, from the fixed zero-shot prompt).
@@ -13,7 +13,7 @@ import torch
 from PIL import Image
 from transformers import AutoModel, AutoProcessor
 
-from common import CLASSES, FEATURES, MODELS, PROMPT_NAMES, PROMPT_TEMPLATE, TEXT_MODELS, image_path, read_splits
+from common import CLASSES, FEATURES, FOLDS, MODELS, PROMPT_NAMES, PROMPT_TEMPLATE, TEXT_MODELS, image_path, read_folds, read_splits
 
 
 def as_tensor(out):
@@ -55,6 +55,9 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     files = [r["file"] for r in read_splits()]
+    if FOLDS.exists():  # union: CV folds may keep a different near-duplicate representative than splits.csv
+        seen = set(files)
+        files += [r["file"] for r in read_folds() if r["file"] not in seen]
     FEATURES.mkdir(exist_ok=True)
     for name in args.models:
         processor = AutoProcessor.from_pretrained(MODELS[name])

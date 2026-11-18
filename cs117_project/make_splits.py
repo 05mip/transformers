@@ -13,8 +13,14 @@ Steps:
 
 Writes data/splits.csv (committed). Run once; the test split is then frozen.
 
+With --folds K, steps 3-4 are replaced by group-aware K-fold assignment (see KFOLD_PLAN.md): every
+kept image goes to exactly one fold, stratified by class and grouped by source (photographer), so a
+photo session never spans a test fold and its training folds. Writes data/folds.csv
+(file,label,source,fold) and leaves data/splits.csv untouched.
+
 Usage:
     python cs117_project/make_splits.py --n-test 20
+    python cs117_project/make_splits.py --folds 4 --max-per-source 15
 """
 import argparse
 import csv
@@ -24,7 +30,7 @@ from collections import defaultdict
 import numpy as np
 from PIL import Image
 
-from common import CLASSES, MANIFEST, MANUAL_SOURCES, PHONE_DIR, RAW_DIR, SPLITS, image_path
+from common import CLASSES, FOLDS, MANIFEST, MANUAL_SOURCES, PHONE_DIR, RAW_DIR, SPLITS, image_path
 
 
 def dhash(path, size=8):
@@ -33,12 +39,62 @@ def dhash(path, size=8):
     return int("".join("1" if b else "0" for b in (a[:, 1:] > a[:, :-1]).flatten()), 2)
 
 
+def source_key(f, label, source):
+    """Group key for an image: class + photographer. Unknown photographer -> the image is its own group."""
+    return f"{label}|{source.get(f.split('/')[-1]) or f}"
+
+
+def per_source_all(kept, source):
+    counts = defaultdict(int)
+    for f, c in kept:
+        counts[(c, source.get(f.split("/")[-1]) or f)] += 1
+    return counts
+
+
+def write_folds(per_class, source, args):
+    from sklearn.model_selection import StratifiedGroupKFold
+
+    files = [f for c in CLASSES for f in sorted(per_class[c])]
+    labels = [f.split("/")[0] for f in files]
+    groups = [source_key(f, lab, source) for f, lab in zip(files, labels)]
+    sgkf = StratifiedGroupKFold(n_splits=args.folds, shuffle=True, random_state=args.seed)
+    fold_of = {}
+    for k, (_, test_idx) in enumerate(sgkf.split(files, labels, groups)):
+        for i in test_idx:
+            fold_of[files[i]] = k
+
+    # checks: every image in exactly one fold; no source group spans two folds
+    assert len(fold_of) == len(files) == len(set(files)), "an image is missing from the folds or repeated"
+    group_folds = defaultdict(set)
+    for f, g in zip(files, groups):
+        group_folds[g].add(fold_of[f])
+    split_groups = [g for g, fs in group_folds.items() if len(fs) > 1]
+    assert not split_groups, f"source groups split across folds: {split_groups[:5]}"
+
+    print(f"{len(files)} images, {len(group_folds)} source groups, {args.folds} folds (seed {args.seed})")
+    print("  fold  " + " ".join(f"{c:>8s}" for c in CLASSES) + "   total")
+    for k in range(args.folds):
+        n = [sum(1 for f, lab in zip(files, labels) if fold_of[f] == k and lab == c) for c in CLASSES]
+        print(f"  {k:4d}  " + " ".join(f"{x:8d}" for x in n) + f"   {sum(n):5d}")
+    n = [labels.count(c) for c in CLASSES]
+    print("  all   " + " ".join(f"{x:8d}" for x in n) + f"   {sum(n):5d}")
+
+    with FOLDS.open("w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["file", "label", "source", "fold"])
+        for f, lab, g in zip(files, labels, groups):
+            w.writerow([f, lab, g.split("|", 1)[1], fold_of[f]])
+    print(f"wrote {FOLDS} (data/splits.csv left unchanged)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n-test", type=int, default=40)
     ap.add_argument("--dup-thresh", type=int, default=6)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--max-per-source", type=int, default=0, help="0 = no cap (team decision 2026-11-17)")
+    ap.add_argument("--folds", type=int, default=0, help="K > 0: write data/folds.csv (K group-aware folds) "
+                                                        "instead of data/splits.csv")
     args = ap.parse_args()
 
     # source of each image: manifest author (photographer / domain), else manual_sources.csv domain
@@ -61,6 +117,13 @@ def main():
             per_source[key] += 1
             items.append((f, c))
     print(f"{len(kept)} images in data/raw, {len(items)} after per-source cap of {args.max_per_source}")
+    if args.max_per_source:
+        dropped = defaultdict(int)
+        for (c, src), n in per_source_all(kept, source).items():
+            if n > args.max_per_source:
+                dropped[(c, src)] = n - args.max_per_source
+        for (c, src), n in sorted(dropped.items(), key=lambda kv: -kv[1]):
+            print(f"  cap dropped {n:3d} {c} images from source {src!r}")
 
     hashes = [dhash(image_path(f)) for f, _ in items]
     parent = list(range(len(items)))  # union-find over near-duplicates
@@ -89,6 +152,10 @@ def main():
         n_dup += len(members) - 1
         per_class[labels.pop()].append(items[min(members)][0])  # one representative per group
     print(f"removed {n_dup} within-class near-duplicates, {n_cross} images in cross-class duplicate groups")
+
+    if args.folds:
+        write_folds(per_class, source, args)
+        return
 
     rng = random.Random(args.seed)
     rows = []
