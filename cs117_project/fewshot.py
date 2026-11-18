@@ -6,7 +6,7 @@ Regularization C is chosen by cross-validation on the k-shot training set only (
 for k = 1 there is nothing to cross-validate, so C is fixed at 10.
 The 0-shot point for CLIP/SigLIP comes from the zero-shot prompt classifier (see baselines.py).
 
-With --cv (see KFOLD_PLAN.md): for each of the K group-aware folds in data/folds.csv, test = that fold
+With --cv: for each of the K group-aware folds in data/folds.csv, test = that fold
 and the k shots are drawn from the other folds. Reports mean +- std over K folds x seeds, per-fold
 means, balanced accuracy, mean per-class accuracy, a pooled confusion matrix (first seed, summed over
 folds, so each image is counted once) and per-fold model ranks.

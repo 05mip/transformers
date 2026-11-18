@@ -22,8 +22,6 @@ Original repository: https://github.com/huggingface/transformers
 | `cs117_project/data/splits.csv` | The frozen split (test / pool / phone). |
 | `cs117_project/data/folds.csv` | 4-fold cross-validation assignment (stratified by class, grouped by photographer). |
 | `cs117_project/data/manual_sources.csv` | URL and photographer (`author`) for every hand-added image. |
-| `cs117_project/KFOLD_PLAN.md` | Plan for the cross-validation protocol (implemented 2026-11-18). |
 | `cs117_project/data/labeling_criteria.md` | One-line rule per bike type and the reject reasons. |
 | `cs117_project/results/*` | Saved outputs behind every reported number: `*_test.json` / `fewshot_curve.png` (single check-in split), `*_cv.json` / `fewshot_cv_curve.png` (4-fold CV). |
 | `cs117_project/CONTRIBUTION.md` | This file. |
-| `cs117_project/NOTES.md` | Dated project log: what we did, what broke and the fixes, open failures, to-dos, and the AI-tool use disclosure. |

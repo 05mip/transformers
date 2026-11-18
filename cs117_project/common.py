@@ -15,7 +15,7 @@ RAW_DIR = DATA / "raw"
 REVIEW_DIR = DATA / "review_view"
 PHONE_DIR = DATA / "phone"          # our own phone photos: data/phone/<class>/*.jpg (test-only)
 SPLITS = DATA / "splits.csv"        # committed: file,label,split (split = test | pool | phone)
-FOLDS = DATA / "folds.csv"          # committed: file,label,source,fold (group-aware K-fold CV, KFOLD_PLAN.md)
+FOLDS = DATA / "folds.csv"          # committed: file,label,source,fold (group-aware K-fold CV)
 MANIFEST = DATA / "manifest_raw.csv"  # committed: source URL / license / author for every downloaded image
 MANUAL_SOURCES = DATA / "manual_sources.csv"  # optional: filename,url for images added by hand
 FEATURES = ROOT / "features"        # git-ignored embedding cache

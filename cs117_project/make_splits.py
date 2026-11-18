@@ -13,7 +13,7 @@ Steps:
 
 Writes data/splits.csv (committed). Run once; the test split is then frozen.
 
-With --folds K, steps 3-4 are replaced by group-aware K-fold assignment (see KFOLD_PLAN.md): every
+With --folds K, steps 3-4 are replaced by group-aware K-fold assignment: every
 kept image goes to exactly one fold, stratified by class and grouped by source (photographer), so a
 photo session never spans a test fold and its training folds. Writes data/folds.csv
 (file,label,source,fold) and leaves data/splits.csv untouched.
