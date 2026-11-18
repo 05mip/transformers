@@ -17,9 +17,49 @@ disclosure live at the bottom. Final write-up claims must come from this log or 
 - [ ] Phone photos -> `data/phone/<class>/`, labeled by `data/labeling_criteria.md`; test-only.
 - [ ] Check-in (due Tue Nov 17, 11:58pm): fill `checkin_template.pptx`, export PDF, submit on Canvas.
 - [ ] Final: README with rerun commands + results table; slides Nov 29; presentation Nov 30/Dec 2; video+code Dec 7.
+- [x] Group-aware 4-fold CV (KFOLD_PLAN.md), done 2026-11-18. 32-shot point now included.
+- [ ] Team to confirm the CV cap choice (option a, `--max-per-source 15`, drops 44 BMX images from one photographer).
+- [ ] New road images (if added) need an `author` in `manual_sources.csv`; then rerun make_splits/embed/CV.
 - Caveat for write-up: web-scraped bike images may overlap with the models' pretraining data.
 
 ## Log
+
+### 2026-11-18: group-aware 4-fold cross-validation (KFOLD_PLAN.md implemented)
+- Replaced the single test/pool split with 4 folds (`make_splits.py --folds 4 --max-per-source 15` ->
+  `data/folds.csv`): `StratifiedGroupKFold`, stratified by class, grouped by photographer (manual images grouped
+  by the new `author` column). `data/splits.csv` and the check-in results files are unchanged.
+- **Cap:** used the plan's recommended option (a), a per-source cap of 15. It drops 44 BMX images, all from
+  `thomas bresson` (59 -> 15); no other source exceeds 15. Without it one fold gets 59 BMX test images. Team still
+  needs to confirm this choice. Balanced accuracy (mean per-class accuracy) is also reported as a safety check.
+- Folds (462 images after cap + dedup, 334 source groups), test images per class:
+  ```
+  fold   road mountain cruiser bmx tricycle tandem hybrid  total
+     0     12       15      17  18       14     19     20    115
+     1     13       15      17  17       14     20     19    115
+     2     13       15      17  17       15     20     19    116
+     3     12       15      18  18       14     19     20    116
+  ```
+- Checks passed: every image in exactly one fold; no source group in two folds (asserted in `make_splits.py`);
+  0 dHash pairs at distance <= 6 across folds.
+- Environment: new venv `C:\Users\Justi\cs117_venv` (Python 3.12, torch 2.11.0+cu128, RTX 5060). Re-embedded all
+  images and reran the single-split scripts first: zero-shot matched the check-in exactly (69.3 / 95.7); 3 few-shot
+  means moved by <= 0.15 points (GPU numeric noise). Check-in results files were restored, not overwritten.
+- Zero-shot, pooled over all 462 images: CLIP 67.3% (95% CI 62.8-71.4, balanced 68.2), SigLIP 95.2% (93.3-97.2,
+  balanced 95.4), random 14.3%. CLIP sanity check vs single split (69.3%): close, as expected.
+- Few-shot linear probe, top-1 mean +- std over 4 folds x 5 draws, k = 1/2/4/8/16/32:
+  CLIP 42.0/46.8/61.3/70.1/75.0/79.2; SigLIP 64.9/77.9/86.9/92.7/94.0/95.0; DINOv2 39.2/43.2/54.8/69.1/77.6/83.5.
+  Std is 2-9 points. Balanced accuracy is within 1.6 points of top-1 everywhere.
+- **32 shots now possible** (smallest training side is road, 37-38 images). At k = 32 the 5 draws overlap heavily,
+  so the std there mostly comes from the folds.
+- **Ranking stability:** SigLIP ranks first in 4/4 folds at every k (and zero-shot). CLIP beats DINOv2 in 3/4 folds
+  at k = 1-2 and 4/4 at k = 4, but DINOv2 beats CLIP in 3/4 folds at k = 8, 16, 32. So SigLIP > others is stable;
+  CLIP vs DINOv2 flips around 8 shots.
+- SigLIP zero-shot (95.2%) is still as good as its 32-shot probe (95.0%); CLIP's probe passes its zero-shot at
+  ~8 shots. CLIP zero-shot is weakest on hybrid (38.5%) and cruiser (53.6%).
+- Compared with the check-in split at 16 shots: CLIP 80.1 -> 75.0, SigLIP 95.7 -> 94.0, DINOv2 77.3 -> 77.6.
+  The drop is consistent with removing same-session leakage (caveat from 2026-11-17), but the check-in numbers
+  came from one 140-image split, so we cannot attribute the gap to leakage alone.
+- Outputs: `results/baseline_cv.json`, `results/fewshot_cv.json`, `results/fewshot_cv_curve.png`.
 
 ### 2026-11-17: check-in numbers (frozen split)
 - Justin added 30 BMX + 30 hybrid (`data/manual_sources.csv`); Anish moved 6 tandem/mountain images out of reject;
