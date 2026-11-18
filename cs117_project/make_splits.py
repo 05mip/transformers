@@ -46,8 +46,9 @@ def main():
               csv.DictReader(MANIFEST.open(newline="", encoding="utf-8"))}
     if MANUAL_SOURCES.exists():
         for r in csv.DictReader(MANUAL_SOURCES.open(newline="", encoding="utf-8")):
-            parts = r.get("url", "").split("/")
-            source.setdefault(r["filename"], parts[2].removeprefix("www.") if len(parts) > 2 else "")
+            # author = photographer (Commons artist, "flickr:<user>", or institution). Blank -> the image
+            # is its own source; the hosting domain is NOT used, since it lumps unrelated photographers.
+            source.setdefault(r["filename"], (r.get("author") or "").strip().lower())
     kept = []
     for c in CLASSES:
         d = RAW_DIR / c
