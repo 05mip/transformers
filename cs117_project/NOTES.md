@@ -21,6 +21,18 @@ disclosure live at the bottom. Final write-up claims must come from this log or 
 
 ## Log
 
+### 2026-11-17: check-in numbers (frozen split)
+- Justin added 30 BMX + 30 hybrid (`data/manual_sources.csv`); Anish moved 6 tandem/mountain images out of reject;
+  Michael removed weak images. 514 images in `data/raw/`; dHash removed 8 near-duplicates -> 506.
+- **Per-source cap removed** (team decision): use every hand-reviewed image. `--max-per-source` now defaults to 0.
+  Caveat for write-up: some classes have several photos from one event/photographer, so test and pool may share
+  a photo session, which can inflate few-shot accuracy.
+- Split: 20 test per class (140); pool road 30, mountain 40, cruiser 49, bmx 94, tricycle 37, tandem 58, hybrid 58.
+- Zero-shot: CLIP 69.3% (95% CI 61.4-75.7), SigLIP 95.7% (92.1-98.6), random 14.3%.
+- Few-shot linear probe (mean of 5 seeds), k = 1/2/4/8/16:
+  CLIP 42.0/55.7/65.6/78.4/80.1; SigLIP 71.3/76.6/87.6/94.6/95.7; DINOv2 40.0/47.4/59.9/72.3/77.3.
+- CLIP zero-shot fails mostly on cruiser (45%) and hybrid (45%); hybrid<->road and cruiser->hybrid confusions.
+
 ### 2026-11-16: dataset, full pipeline, provisional baseline
 **Done**
 - Wrote the pipeline: `collect_images.py` (Commons + Openverse), `collect_web.py` (Bing), `contact_sheets.py` +

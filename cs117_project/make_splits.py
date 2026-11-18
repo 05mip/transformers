@@ -2,9 +2,8 @@
 
 Steps:
   1. Use every image in data/raw/<class>/ (hand-reviewed against data/labeling_criteria.md).
-     Then cap images per source (Commons/Openverse photographer, website domain for web-search images,
-     manual_sources.csv domain for hand-added images) at --max-per-source per class, so one photo
-     session or one shop cannot dominate a class (and leak between test and pool).
+     Optionally cap images per source (photographer / domain) at --max-per-source per class.
+     Default 0 = no cap: the team decided on 2026-11-17 to use every hand-reviewed image.
   2. Perceptual-hash (64-bit dHash) every image; images within Hamming distance <= --dup-thresh are
      near-duplicates. Within a class, keep one image per near-duplicate group. Groups that span classes
      (same picture under two labels) are dropped entirely as ambiguous.
@@ -15,7 +14,7 @@ Steps:
 Writes data/splits.csv (committed). Run once; the test split is then frozen.
 
 Usage:
-    python cs117_project/make_splits.py --n-test 40
+    python cs117_project/make_splits.py --n-test 20
 """
 import argparse
 import csv
@@ -39,7 +38,7 @@ def main():
     ap.add_argument("--n-test", type=int, default=40)
     ap.add_argument("--dup-thresh", type=int, default=6)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--max-per-source", type=int, default=8)
+    ap.add_argument("--max-per-source", type=int, default=0, help="0 = no cap (team decision 2026-11-17)")
     args = ap.parse_args()
 
     # source of each image: manifest author (photographer / domain), else manual_sources.csv domain
@@ -57,7 +56,7 @@ def main():
     per_source, items = defaultdict(int), []
     for f, c in kept:
         key = (c, source.get(f.split("/")[-1]) or f)  # unknown source -> its own source
-        if per_source[key] < args.max_per_source:
+        if not args.max_per_source or per_source[key] < args.max_per_source:
             per_source[key] += 1
             items.append((f, c))
     print(f"{len(kept)} images in data/raw, {len(items)} after per-source cap of {args.max_per_source}")
