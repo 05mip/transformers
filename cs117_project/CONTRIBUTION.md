@@ -24,4 +24,5 @@ Original repository: https://github.com/huggingface/transformers
 | `cs117_project/data/manual_sources.csv` | URL and photographer (`author`) for every hand-added image. |
 | `cs117_project/data/labeling_criteria.md` | One-line rule per bike type and the reject reasons. |
 | `cs117_project/results/*` | Saved outputs behind every reported number: `*_test.json` / `fewshot_curve.png` (single check-in split), `*_cv.json` / `fewshot_cv_curve.png` (4-fold CV). |
+| `cs117_project/README.md` | Project overview, setup, reproduction steps, results tables and external resources. |
 | `cs117_project/CONTRIBUTION.md` | This file. |

@@ -142,8 +142,8 @@ Source: `results/fewshot_cv.json`; plot: `results/fewshot_cv_curve.png`. The JSO
 
 ## Data
 
-- 514 hand-reviewed images across 7 classes, stored in `data/raw/<class>/`
-- 462 images are used after removing near-duplicates and limiting each photographer to 15 images per class
+- 539 hand-reviewed images across 7 classes, stored in `data/raw/<class>/`
+- The reported results use 462 images: the 514 in `data/raw/` at the time, after removing near-duplicates and limiting each photographer to 15 images per class. 25 road images were added afterwards (Nov 18) and will be included in the next run
 - Folds are grouped by photographer, so images from the same photographer never appear in both training and test
 - Sources are recorded for every image: URL, license and author in `data/manifest_raw.csv` (downloaded images), and URL and photographer in `data/manual_sources.csv` (manually added images)
 
